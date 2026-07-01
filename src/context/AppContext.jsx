@@ -1,4 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { auth, db } from '../firebase'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 
 const ThemeContext = createContext()
 const AuthContext = createContext()
@@ -21,24 +24,31 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Will be replaced with Firebase auth listener
-    const stored = localStorage.getItem('venda-user')
-    if (stored) setUser(JSON.parse(stored))
-    setLoading(false)
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Fetch extra user data from Firestore
+        const docRef = doc(db, 'sellers', firebaseUser.uid)
+        const docSnap = await getDoc(docRef)
+        if (docSnap.exists()) {
+          setUser({ uid: firebaseUser.uid, email: firebaseUser.email, ...docSnap.data() })
+        } else {
+          setUser({ uid: firebaseUser.uid, email: firebaseUser.email })
+        }
+      } else {
+        setUser(null)
+      }
+      setLoading(false)
+    })
+    return () => unsub()
   }, [])
 
-  const login = (userData) => {
-    setUser(userData)
-    localStorage.setItem('venda-user', JSON.stringify(userData))
-  }
-
-  const logout = () => {
+  const logout = async () => {
+    await signOut(auth)
     setUser(null)
-    localStorage.removeItem('venda-user')
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, logout, loading }}>
       {children}
     </AuthContext.Provider>
   )
