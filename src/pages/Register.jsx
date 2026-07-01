@@ -1,22 +1,22 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AppContext'
+import { auth, db } from '../firebase'
+import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import Navbar from '../components/Navbar'
 
 const STEPS = ['Account', 'Store Info', 'Product Type', 'Verification']
+const ADMIN_EMAIL = 'sharonadelaja186@gmail.com'
 
 export default function Register() {
   const [step, setStep] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const { login } = useAuth()
-  const navigate = useNavigate()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const [form, setForm] = useState({
     fullName: '', email: '', password: '', confirmPassword: '',
     storeName: '', storeDesc: '', storeSlug: '',
-    productType: '',
-    nin: '', ninPhoto: null
+    productType: '', nin: '', ninPhoto: null
   })
 
   const update = (field, value) => setForm(f => ({ ...f, [field]: value }))
@@ -29,8 +29,7 @@ export default function Register() {
       if (form.password.length < 6) return setError('Password must be at least 6 characters') || false
     }
     if (step === 1) {
-      if (!form.storeName || !form.storeDesc) return setError('All fields are required') || false
-      if (!form.storeSlug) return setError('Store URL is required') || false
+      if (!form.storeName || !form.storeDesc || !form.storeSlug) return setError('All fields are required') || false
     }
     if (step === 2) {
       if (!form.productType) return setError('Please select what you sell') || false
@@ -50,23 +49,36 @@ export default function Register() {
     if (!validateStep()) return
     setLoading(true)
     try {
-      // Will integrate Firebase here
-      await new Promise(r => setTimeout(r, 1500))
-      // Mock successful registration
-      login({
-        id: 'mock-id',
+      const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, form.email, form.password)
+
+      const isAdmin = form.email === ADMIN_EMAIL
+      const sellerData = {
         fullName: form.fullName,
         email: form.email,
         storeName: form.storeName,
         storeSlug: form.storeSlug,
+        storeDesc: form.storeDesc,
         productType: form.productType,
+        nin: form.nin,
         plan: 'free',
-        status: 'pending', // pending verification
-        role: 'seller'
-      })
-      navigate('/dashboard')
+        status: isAdmin ? 'approved' : 'pending',
+        role: isAdmin ? 'admin' : 'seller',
+        createdAt: serverTimestamp(),
+      }
+
+      await setDoc(doc(db, 'sellers', firebaseUser.uid), sellerData)
+
+      if (isAdmin) {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err) {
-      setError('Something went wrong. Please try again.')
+      if (err.code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists')
+      } else {
+        setError('Something went wrong. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -83,8 +95,6 @@ export default function Register() {
       <Navbar variant="public" />
       <div style={{ paddingTop: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '5rem 5% 3rem' }}>
         <div style={{ width: '100%', maxWidth: '480px' }}>
-
-          {/* Progress */}
           <div style={{ marginBottom: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               {STEPS.map((s, i) => (
@@ -109,7 +119,6 @@ export default function Register() {
 
             {error && <div style={{ background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.2)', borderRadius: '8px', padding: '0.7rem 1rem', marginBottom: '1.2rem', color: 'var(--danger)', fontSize: '0.85rem' }}>{error}</div>}
 
-            {/* STEP 0 — Account */}
             {step === 0 && (
               <div>
                 <div className="form-group">
@@ -122,16 +131,25 @@ export default function Register() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Password</label>
-                  <input type="password" value={form.password} onChange={e => update('password', e.target.value)} placeholder="At least 6 characters" />
+                  <div style={{ position: 'relative' }}>
+                    <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={e => update('password', e.target.value)} placeholder="At least 6 characters" style={{ paddingRight: '2.5rem' }} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: 'var(--muted)' }}>
+                      {showPassword ? '🙈' : '👁️'}
+                    </button>
+                  </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Confirm Password</label>
-                  <input type="password" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} placeholder="Repeat password" />
+                  <div style={{ position: 'relative' }}>
+                    <input type={showConfirmPassword ? 'text' : 'password'} value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} placeholder="Repeat password" style={{ paddingRight: '2.5rem' }} />
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: 'var(--muted)' }}>
+                      {showConfirmPassword ? '🙈' : '👁️'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* STEP 1 — Store info */}
             {step === 1 && (
               <div>
                 <div className="form-group">
@@ -140,7 +158,7 @@ export default function Register() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Store URL</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0', border: '1.5px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg2)' }}>
                     <span style={{ padding: '0.7rem 0.8rem', fontSize: '0.85rem', color: 'var(--muted)', background: 'var(--bg3)', whiteSpace: 'nowrap', borderRight: '1px solid var(--border)' }}>venda.app/store/</span>
                     <input value={form.storeSlug} onChange={e => update('storeSlug', e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))} placeholder="your-store" style={{ border: 'none', borderRadius: 0, background: 'transparent' }} />
                   </div>
@@ -153,21 +171,10 @@ export default function Register() {
               </div>
             )}
 
-            {/* STEP 2 — Product type */}
             {step === 2 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                 {productTypes.map(pt => (
-                  <div
-                    key={pt.id}
-                    onClick={() => update('productType', pt.id)}
-                    style={{
-                      border: `2px solid ${form.productType === pt.id ? 'var(--green)' : 'var(--border)'}`,
-                      borderRadius: '10px', padding: '1rem 1.2rem',
-                      cursor: 'pointer', display: 'flex', gap: '1rem', alignItems: 'flex-start',
-                      background: form.productType === pt.id ? 'var(--green-soft)' : 'var(--card)',
-                      transition: 'all 0.2s'
-                    }}
-                  >
+                  <div key={pt.id} onClick={() => update('productType', pt.id)} style={{ border: `2px solid ${form.productType === pt.id ? 'var(--green)' : 'var(--border)'}`, borderRadius: '10px', padding: '1rem 1.2rem', cursor: 'pointer', display: 'flex', gap: '1rem', alignItems: 'flex-start', background: form.productType === pt.id ? 'var(--green-soft)' : 'var(--card)', transition: 'all 0.2s' }}>
                     <span style={{ fontSize: '1.8rem' }}>{pt.emoji}</span>
                     <div>
                       <div style={{ fontWeight: 700, marginBottom: '0.2rem', fontFamily: 'var(--font-display)' }}>{pt.title}</div>
@@ -178,7 +185,6 @@ export default function Register() {
               </div>
             )}
 
-            {/* STEP 3 — Verification */}
             {step === 3 && (
               <div>
                 <div style={{ background: 'var(--green-soft)', border: '1px solid rgba(0,168,120,0.2)', borderRadius: '8px', padding: '0.9rem 1rem', marginBottom: '1.2rem', fontSize: '0.85rem', color: 'var(--light)' }}>
@@ -191,10 +197,7 @@ export default function Register() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">NIN Card / Slip Photo</label>
-                  <div
-                    style={{ border: '2px dashed var(--border)', borderRadius: '10px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: 'var(--bg2)' }}
-                    onClick={() => document.getElementById('nin-upload').click()}
-                  >
+                  <div style={{ border: '2px dashed var(--border)', borderRadius: '10px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: 'var(--bg2)' }} onClick={() => document.getElementById('nin-upload').click()}>
                     {form.ninPhoto ? (
                       <div style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.9rem' }}>✓ {form.ninPhoto.name}</div>
                     ) : (
@@ -207,18 +210,15 @@ export default function Register() {
                   <input id="nin-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => update('ninPhoto', e.target.files[0])} />
                 </div>
                 <p style={{ fontSize: '0.8rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-                  Your store will be reviewed and activated within <strong>24 hours</strong> of submission. You'll get an email notification once approved.
+                  Your store will be reviewed and activated within <strong>24 hours</strong>. You'll get an email once approved.
                 </p>
               </div>
             )}
 
-            {/* Navigation */}
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'space-between' }}>
               {step > 0 ? (
                 <button onClick={back} className="btn-secondary" style={{ flex: 1 }}>← Back</button>
-              ) : (
-                <div style={{ flex: 1 }} />
-              )}
+              ) : <div style={{ flex: 1 }} />}
               {step < STEPS.length - 1 ? (
                 <button onClick={next} className="btn-primary" style={{ flex: 1 }}>Continue →</button>
               ) : (

@@ -26,7 +26,7 @@ export default function Landing() {
 
         <div style={{ display: 'flex', gap: '0.9rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link to="/register" className="btn-primary" style={{ padding: '0.8rem 1.8rem', fontSize: '0.95rem', borderRadius: '10px' }}>Start Selling Free →</Link>
-          <a href="#how" className="btn-secondary" style={{ padding: '0.8rem 1.8rem', fontSize: '0.95rem', borderRadius: '10px' }}>See how it works</a>
+          <Link to="/marketplace" className="btn-secondary" style={{ padding: '0.8rem 1.8rem', fontSize: '0.95rem', borderRadius: '10px' }}>Start Shopping →</Link>
         </div>
 
         <style>{`@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }`}</style>
@@ -134,16 +134,38 @@ export default function Landing() {
       </div>
 
       {/* FOOTER */}
-      <footer style={{ background: 'var(--bg2)', borderTop: '1px solid var(--border)', padding: '2.5rem 5%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <Link to="/" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem' }}>Ven<span style={{ color: 'var(--green)' }}>da</span></Link>
-        <div style={{ display: 'flex', gap: '1.4rem', flexWrap: 'wrap' }}>
-          {[['#how','How it works'],['#products','Products'],['#why','Why Venda'],].map(([h,l]) => (
-            <a key={l} href={h} style={{ fontSize: '0.82rem', color: 'var(--muted)', textDecoration: 'none' }}>{l}</a>
-          ))}
-          <Link to="/login" style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>Log in</Link>
-          <Link to="/register" style={{ fontSize: '0.82rem', color: 'var(--green)', fontWeight: 600 }}>Sign up</Link>
+      <footer style={{ background: 'var(--bg2)', borderTop: '1px solid var(--border)', padding: '2.5rem 5%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2rem' }}>
+          <Link to="/" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--text)', textDecoration: 'none' }}>Ven<span style={{ color: 'var(--green)' }}>da</span></Link>
+          <div style={{ display: 'flex', gap: '1.4rem', flexWrap: 'wrap' }}>
+            {[['#how','How it works'],['#products','Products'],['#why','Why Venda'],].map(([h,l]) => (
+              <a key={l} href={h} style={{ fontSize: '0.82rem', color: 'var(--muted)', textDecoration: 'none' }}>{l}</a>
+            ))}
+            <Link to="/login" style={{ fontSize: '0.82rem', color: 'var(--muted)', textDecoration: 'none' }}>Log in</Link>
+            <Link to="/register" style={{ fontSize: '0.82rem', color: 'var(--green)', fontWeight: 600, textDecoration: 'none' }}>Sign up</Link>
+            <Link to="/dispute" style={{ fontSize: '0.82rem', color: 'var(--muted)', textDecoration: 'none' }}>Report an issue</Link>
+          </div>
         </div>
-        <div style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>© 2026 Venda · Real sellers. Real products.</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>© 2026 Venda · Real sellers. Real products.</div>
+          <div style={{ display: 'flex', gap: '1.2rem', alignItems: 'center' }}>
+            <a href="https://instagram.com/vendaapp" target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', color: 'var(--muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--green)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}>
+              📸 Instagram
+            </a>
+            <a href="https://tiktok.com/@vendaapp" target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', color: 'var(--muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--green)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}>
+              🎵 TikTok
+            </a>
+            <a href="mailto:vendateamapp@gmail.com" style={{ fontSize: '0.82rem', color: 'var(--muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--green)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}>
+              ✉️ vendateamapp@gmail.com
+            </a>
+          </div>
+        </div>
       </footer>
     </div>
   )

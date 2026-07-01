@@ -1,18 +1,43 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AppContext'
+import { db } from '../firebase'
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore'
 import Navbar from '../components/Navbar'
-
-const mockStats = { totalSales: 12, revenue: 145000, views: 342, products: 3 }
-const mockOrders = [
-  { id: 'ORD001', buyer: 'Tolu A.', product: 'Ankara Midi Dress', amount: 18500, status: 'pending', date: '28 Jun 2026', type: 'physical' },
-  { id: 'ORD002', buyer: 'Chidi M.', product: 'Business Plan Template', amount: 3000, status: 'delivered', date: '27 Jun 2026', type: 'digital' },
-  { id: 'ORD003', buyer: 'Amara S.', product: 'Lip Gloss Set', amount: 8200, status: 'pending', date: '26 Jun 2026', type: 'physical' },
-]
 
 export default function Dashboard() {
   const { user } = useAuth()
   const isPremium = user?.plan === 'premium'
   const isPending = user?.status === 'pending'
+  const [orders, setOrders] = useState([])
+  const [stats, setStats] = useState({ totalSales: 0, revenue: 0, products: 0 })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user?.uid) return
+    const fetchData = async () => {
+      try {
+        // Fetch orders
+        const ordersQ = query(collection(db, 'orders'), where('sellerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(5))
+        const ordersSnap = await getDocs(ordersQ)
+        const ordersData = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+        setOrders(ordersData)
+
+        // Fetch products count
+        const productsQ = query(collection(db, 'products'), where('sellerId', '==', user.uid))
+        const productsSnap = await getDocs(productsQ)
+
+        // Calculate stats
+        const totalRevenue = ordersData.reduce((sum, o) => sum + (o.amount || 0), 0)
+        setStats({ totalSales: ordersData.length, revenue: totalRevenue, products: productsSnap.size })
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [user])
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg2)' }}>
@@ -46,12 +71,12 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
           <div className="card">
             <div style={{ fontSize: '1.4rem', marginBottom: '0.6rem' }}>🛍️</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)', lineHeight: 1, marginBottom: '0.3rem' }}>{mockStats.totalSales}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)', lineHeight: 1, marginBottom: '0.3rem' }}>{loading ? '...' : stats.totalSales}</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Total Sales</div>
           </div>
           <div className="card">
             <div style={{ fontSize: '1.4rem', marginBottom: '0.6rem' }}>💰</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)', lineHeight: 1, marginBottom: '0.3rem' }}>₦{mockStats.revenue.toLocaleString()}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)', lineHeight: 1, marginBottom: '0.3rem' }}>₦{loading ? '...' : stats.revenue.toLocaleString()}</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Revenue</div>
           </div>
           <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -62,12 +87,12 @@ export default function Dashboard() {
               </div>
             )}
             <div style={{ fontSize: '1.4rem', marginBottom: '0.6rem' }}>👀</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)', lineHeight: 1, marginBottom: '0.3rem' }}>{mockStats.views}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)', lineHeight: 1, marginBottom: '0.3rem' }}>0</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Store Views</div>
           </div>
           <div className="card">
             <div style={{ fontSize: '1.4rem', marginBottom: '0.6rem' }}>📦</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)', lineHeight: 1, marginBottom: '0.3rem' }}>{mockStats.products}{!isPremium ? '/5' : ''}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)', lineHeight: 1, marginBottom: '0.3rem' }}>{loading ? '...' : `${stats.products}${!isPremium ? '/5' : ''}`}</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Products</div>
           </div>
         </div>
@@ -78,31 +103,40 @@ export default function Dashboard() {
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem' }}>Recent Orders</div>
             <Link to="/dashboard/orders" style={{ fontSize: '0.82rem', color: 'var(--green)', fontWeight: 600 }}>View all →</Link>
           </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Order ID', 'Buyer', 'Product', 'Amount', 'Status', 'Date'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '0.6rem 0.8rem', color: 'var(--muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {mockOrders.map(o => (
-                  <tr key={o.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '0.75rem 0.8rem', color: 'var(--muted)', fontWeight: 600 }}>{o.id}</td>
-                    <td style={{ padding: '0.75rem 0.8rem' }}>{o.buyer}</td>
-                    <td style={{ padding: '0.75rem 0.8rem' }}>{o.product}</td>
-                    <td style={{ padding: '0.75rem 0.8rem', fontWeight: 600, color: 'var(--green)' }}>₦{o.amount.toLocaleString()}</td>
-                    <td style={{ padding: '0.75rem 0.8rem' }}>
-                      <span className={`badge ${o.status === 'delivered' ? 'badge-green' : 'badge-yellow'}`}>{o.status}</span>
-                    </td>
-                    <td style={{ padding: '0.75rem 0.8rem', color: 'var(--muted)' }}>{o.date}</td>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted)' }}>Loading...</div>
+          ) : orders.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📭</div>
+              <div>No orders yet</div>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    {['Order ID', 'Buyer', 'Product', 'Amount', 'Status', 'Date'].map(h => (
+                      <th key={h} style={{ textAlign: 'left', padding: '0.6rem 0.8rem', color: 'var(--muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {orders.map(o => (
+                    <tr key={o.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '0.75rem 0.8rem', color: 'var(--muted)', fontWeight: 600 }}>{o.id.slice(0, 8).toUpperCase()}</td>
+                      <td style={{ padding: '0.75rem 0.8rem' }}>{o.buyerName}</td>
+                      <td style={{ padding: '0.75rem 0.8rem' }}>{o.productName}</td>
+                      <td style={{ padding: '0.75rem 0.8rem', fontWeight: 600, color: 'var(--green)' }}>₦{o.amount?.toLocaleString()}</td>
+                      <td style={{ padding: '0.75rem 0.8rem' }}>
+                        <span className={`badge ${o.status === 'delivered' ? 'badge-green' : 'badge-yellow'}`}>{o.status}</span>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.8rem', color: 'var(--muted)' }}>{o.createdAt?.toDate?.()?.toLocaleDateString('en-NG') || 'N/A'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Quick actions */}
@@ -119,6 +153,13 @@ export default function Dashboard() {
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>View Orders</div>
               <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Track and manage orders</div>
+            </div>
+          </Link>
+          <Link to="/dashboard/sponsored" className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', textDecoration: 'none', border: '1px solid rgba(232,106,26,0.25)', background: 'rgba(232,106,26,0.05)' }}>
+            <span style={{ fontSize: '1.5rem' }}>⭐</span>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#E86A1A' }}>Feature a Product</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{isPremium ? '₦500 for 24hrs (Premium rate)' : '₦1,000 for 24 hours'}</div>
             </div>
           </Link>
           {!isPremium && (

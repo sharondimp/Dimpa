@@ -1,62 +1,112 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AppContext'
+import { db } from '../firebase'
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 import Navbar from '../components/Navbar'
-
-const mockProducts = [
-  { id: 1, name: 'Ankara Midi Dress', price: 18500, type: 'physical', stock: 5, status: 'active', image: '👗' },
-  { id: 2, name: 'Business Plan Template', price: 3000, type: 'digital', stock: null, status: 'active', image: '📘' },
-  { id: 3, name: 'Lip Gloss Set', price: 8200, type: 'physical', stock: 12, status: 'active', image: '💄' },
-]
 
 export default function Products() {
   const { user } = useAuth()
   const isPremium = user?.plan === 'premium'
   const productType = user?.productType || 'both'
 
-  const getInitialProducts = () => {
-    if (productType === 'physical') return mockProducts.filter(p => p.type === 'physical')
-    if (productType === 'digital') return mockProducts.filter(p => p.type === 'digital')
-    return mockProducts
-  }
-
-  const [products, setProducts] = useState(getInitialProducts())
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editProduct, setEditProduct] = useState(null)
-  const [form, setForm] = useState({ name: '', price: '', type: productType === 'both' ? 'physical' : productType, description: '', stock: '', file: null, image: null })
+  const [form, setForm] = useState({ name: '', price: '', type: productType === 'both' ? 'physical' : productType, description: '', stock: '', image: null })
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const maxProducts = isPremium ? Infinity : 5
   const canAdd = products.length < maxProducts
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
+  const fetchProducts = async () => {
+    if (!user?.uid) return
+    try {
+      const q = query(collection(db, 'products'), where('sellerId', '==', user.uid))
+      const snap = await getDocs(q)
+      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    } catch (err) {
+      console.error('Error fetching products:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchProducts() }, [user])
+
   const openAdd = () => {
     setEditProduct(null)
-    setForm({ name: '', price: '', type: productType === 'both' ? 'physical' : productType, description: '', stock: '', file: null, image: null })
+    setForm({ name: '', price: '', type: productType === 'both' ? 'physical' : productType, description: '', stock: '', image: null })
     setShowModal(true)
   }
   const openEdit = (p) => {
     setEditProduct(p)
-    setForm({ name: p.name, price: p.price, type: p.type, description: '', stock: p.stock || '', file: null, image: null })
+    setForm({ name: p.name, price: p.price, type: p.type, description: p.description || '', stock: p.stock || '', image: null })
     setShowModal(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setError('')
     if (!form.name || !form.price) return setError('Name and price are required')
-    if (editProduct) {
-      setProducts(ps => ps.map(p => p.id === editProduct.id ? { ...p, name: form.name, price: Number(form.price), type: form.type, stock: form.stock || null } : p))
-    } else {
-      setProducts(ps => [...ps, { id: Date.now(), name: form.name, price: Number(form.price), type: form.type, stock: form.stock || null, status: 'active', image: form.type === 'digital' ? '💻' : '📦' }])
+    setSaving(true)
+    try {
+      // Upload image to ImgBB if provided
+      let imageUrl = editProduct?.imageUrl || ''
+      if (form.image) {
+        const imgData = new FormData()
+        imgData.append('image', form.image)
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_IMGBB_KEY}`, { method: 'POST', body: imgData })
+        const imgJson = await res.json()
+        imageUrl = imgJson.data?.url || ''
+      }
+
+      const productData = {
+        name: form.name,
+        price: Number(form.price),
+        type: form.type,
+        description: form.description,
+        stock: form.type === 'physical' ? Number(form.stock) || 0 : null,
+        imageUrl,
+        sellerId: user.uid,
+        storeSlug: user.storeSlug,
+        status: 'active',
+      }
+
+      if (editProduct) {
+        await updateDoc(doc(db, 'products', editProduct.id), productData)
+        showToast('Product updated!')
+      } else {
+        productData.createdAt = serverTimestamp()
+        await addDoc(collection(db, 'products'), productData)
+        showToast('Product added!')
+      }
+      await fetchProducts()
+      setShowModal(false)
+    } catch (err) {
+      setError('Failed to save product. Try again.')
+      console.error(err)
+    } finally {
+      setSaving(false)
     }
-    setShowModal(false)
-    showToast(editProduct ? 'Product updated!' : 'Product added!')
   }
 
-  const deleteProduct = (id) => { setProducts(ps => ps.filter(p => p.id !== id)); showToast('Product deleted') }
-  const toggleStatus = (id) => setProducts(ps => ps.map(p => p.id === id ? { ...p, status: p.status === 'active' ? 'inactive' : 'active' } : p))
+  const deleteProduct = async (id) => {
+    if (!confirm('Delete this product?')) return
+    await deleteDoc(doc(db, 'products', id))
+    setProducts(ps => ps.filter(p => p.id !== id))
+    showToast('Product deleted')
+  }
+
+  const toggleStatus = async (product) => {
+    const newStatus = product.status === 'active' ? 'inactive' : 'active'
+    await updateDoc(doc(db, 'products', product.id), { status: newStatus })
+    setProducts(ps => ps.map(p => p.id === product.id ? { ...p, status: newStatus } : p))
+  }
 
   const allowedTypes = productType === 'both'
     ? [{ value: 'physical', label: '📦 Physical Product' }, { value: 'digital', label: '💻 Digital Product' }]
@@ -72,7 +122,7 @@ export default function Products() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.2rem' }}>Products</div>
-            <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{products.length}/{isPremium ? '∞' : '5'} products used</p>
+            <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{products.length}/{isPremium ? '∞' : '5'} products</p>
           </div>
           {canAdd ? (
             <button onClick={openAdd} className="btn-primary">+ Add Product</button>
@@ -83,33 +133,50 @@ export default function Products() {
 
         {!isPremium && (
           <div style={{ background: 'var(--green-soft)', border: '1px solid rgba(0,168,120,0.2)', borderRadius: '10px', padding: '0.9rem 1.2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.875rem', color: 'var(--light)' }}>Free plan — {5 - products.length} product slot{5 - products.length !== 1 ? 's' : ''} remaining</span>
-            <Link to="/dashboard/upgrade" style={{ fontSize: '0.82rem', color: 'var(--green)', fontWeight: 600 }}>Go Premium for unlimited →</Link>
+            <span style={{ fontSize: '0.875rem', color: 'var(--light)' }}>Free plan — {5 - products.length} slot{5 - products.length !== 1 ? 's' : ''} left</span>
+            <Link to="/dashboard/upgrade" style={{ fontSize: '0.82rem', color: 'var(--green)', fontWeight: 600 }}>Go Premium →</Link>
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
-          {products.map(p => (
-            <div key={p.id} className="card" style={{ opacity: p.status === 'inactive' ? 0.6 : 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.9rem' }}>
-                <div style={{ fontSize: '2rem' }}>{p.image}</div>
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <span className={`badge ${p.status === 'active' ? 'badge-green' : 'badge-gray'}`}>{p.status}</span>
-                  <span className={`badge ${p.type === 'digital' ? 'badge-green' : 'badge-gray'}`}>{p.type}</span>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--muted)' }}>Loading products...</div>
+        ) : products.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem' }} className="card">
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📦</div>
+            <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>No products yet</div>
+            <div style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '1.2rem' }}>Add your first product to start selling</div>
+            <button onClick={openAdd} className="btn-primary">+ Add Product</button>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
+            {products.map(p => (
+              <div key={p.id} className="card" style={{ opacity: p.status === 'inactive' ? 0.6 : 1 }}>
+                {p.imageUrl ? (
+                  <img src={p.imageUrl} alt={p.name} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '8px', marginBottom: '0.9rem' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '160px', background: 'var(--bg3)', borderRadius: '8px', marginBottom: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem' }}>
+                    {p.type === 'digital' ? '💻' : '📦'}
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                  <div style={{ fontWeight: 700, fontFamily: 'var(--font-display)', fontSize: '0.95rem' }}>{p.name}</div>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <span className={`badge ${p.status === 'active' ? 'badge-green' : 'badge-gray'}`}>{p.status}</span>
+                    <span className={`badge ${p.type === 'digital' ? 'badge-green' : 'badge-gray'}`}>{p.type}</span>
+                  </div>
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--green)', marginBottom: '0.3rem' }}>₦{p.price?.toLocaleString()}</div>
+                {p.type === 'physical' && <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '1rem' }}>Stock: {p.stock ?? 0}</div>}
+                {p.type === 'digital' && <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '1rem' }}>Digital download</div>}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => openEdit(p)} className="btn-secondary" style={{ flex: 1, padding: '0.45rem', fontSize: '0.8rem', justifyContent: 'center' }}>Edit</button>
+                  <button onClick={() => toggleStatus(p)} className="btn-secondary" style={{ flex: 1, padding: '0.45rem', fontSize: '0.8rem', justifyContent: 'center' }}>{p.status === 'active' ? 'Hide' : 'Show'}</button>
+                  <button onClick={() => deleteProduct(p.id)} style={{ padding: '0.45rem 0.7rem', borderRadius: '6px', background: 'rgba(229,62,62,0.08)', color: 'var(--danger)', fontSize: '0.8rem', border: '1px solid rgba(229,62,62,0.2)', cursor: 'pointer' }}>🗑</button>
                 </div>
               </div>
-              <div style={{ fontWeight: 700, marginBottom: '0.3rem', fontFamily: 'var(--font-display)' }}>{p.name}</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--green)', marginBottom: '0.3rem' }}>₦{p.price.toLocaleString()}</div>
-              {p.type === 'physical' && <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '1rem' }}>Stock: {p.stock ?? 'N/A'}</div>}
-              {p.type === 'digital' && <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: '1rem' }}>Digital download</div>}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => openEdit(p)} className="btn-secondary" style={{ flex: 1, padding: '0.45rem', fontSize: '0.8rem', justifyContent: 'center' }}>Edit</button>
-                <button onClick={() => toggleStatus(p.id)} className="btn-secondary" style={{ flex: 1, padding: '0.45rem', fontSize: '0.8rem', justifyContent: 'center' }}>{p.status === 'active' ? 'Hide' : 'Show'}</button>
-                <button onClick={() => deleteProduct(p.id)} style={{ padding: '0.45rem 0.7rem', borderRadius: '6px', background: 'rgba(229,62,62,0.08)', color: 'var(--danger)', fontSize: '0.8rem', border: '1px solid rgba(229,62,62,0.2)', cursor: 'pointer' }}>🗑</button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {showModal && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
@@ -145,15 +212,6 @@ export default function Products() {
                   <input type="number" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} placeholder="How many do you have?" />
                 </div>
               )}
-              {form.type === 'digital' && (
-                <div className="form-group">
-                  <label className="form-label">Upload File</label>
-                  <div style={{ border: '2px dashed var(--border)', borderRadius: '10px', padding: '1.2rem', textAlign: 'center', cursor: 'pointer', background: 'var(--bg2)' }} onClick={() => document.getElementById('product-file').click()}>
-                    {form.file ? <div style={{ color: 'var(--green)', fontWeight: 600, fontSize: '0.875rem' }}>✓ {form.file.name}</div> : <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>📎 Tap to upload your digital file</div>}
-                  </div>
-                  <input id="product-file" type="file" style={{ display: 'none' }} onChange={e => setForm(f => ({ ...f, file: e.target.files[0] }))} />
-                </div>
-              )}
               <div className="form-group">
                 <label className="form-label">Product Image</label>
                 <div style={{ border: '2px dashed var(--border)', borderRadius: '10px', padding: '1.2rem', textAlign: 'center', cursor: 'pointer', background: 'var(--bg2)' }} onClick={() => document.getElementById('product-img').click()}>
@@ -163,7 +221,7 @@ export default function Products() {
               </div>
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button onClick={() => setShowModal(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
-                <button onClick={handleSave} className="btn-primary" style={{ flex: 1 }}>Save Product</button>
+                <button onClick={handleSave} className="btn-primary" style={{ flex: 1 }} disabled={saving}>{saving ? 'Saving...' : 'Save Product'}</button>
               </div>
             </div>
           </div>

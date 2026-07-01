@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AppContext'
+import { auth, db } from '../firebase'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 import Navbar from '../components/Navbar'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
-  const navigate = useNavigate()
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -17,24 +17,27 @@ export default function Login() {
     if (!email || !password) return setError('Please fill in all fields')
     setLoading(true)
     try {
-      // Mock login — will replace with Firebase
-      await new Promise(r => setTimeout(r, 1000))
+      const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password)
+      const docSnap = await getDoc(doc(db, 'sellers', firebaseUser.uid))
 
-      // Mock admin login
-      if (email === 'admin@venda.app') {
-        login({ id: 'admin', fullName: 'Sharon', email, role: 'admin', plan: 'admin' })
-        navigate('/admin')
-        return
+      if (docSnap.exists()) {
+        const userData = docSnap.data()
+        if (userData.role === 'admin') {
+          navigate('/admin')
+        } else {
+          navigate('/dashboard')
+        }
+      } else {
+        navigate('/dashboard')
       }
-
-      login({
-        id: 'seller-1', fullName: 'Sharon Adelaja', email,
-        storeName: 'My Store', storeSlug: 'my-store',
-        productType: 'both', plan: 'free', status: 'approved', role: 'seller'
-      })
-      navigate('/dashboard')
     } catch (err) {
-      setError('Invalid email or password')
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+        setError('Invalid email or password')
+      } else if (err.code === 'auth/user-not-found') {
+        setError('No account found with this email')
+      } else {
+        setError('Something went wrong. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -51,9 +54,7 @@ export default function Login() {
           </div>
 
           <div className="card" style={{ padding: '2rem' }}>
-            {error && (
-              <div style={{ background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.2)', borderRadius: '8px', padding: '0.7rem 1rem', marginBottom: '1.2rem', color: 'var(--danger)', fontSize: '0.85rem' }}>{error}</div>
-            )}
+            {error && <div style={{ background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.2)', borderRadius: '8px', padding: '0.7rem 1rem', marginBottom: '1.2rem', color: 'var(--danger)', fontSize: '0.85rem' }}>{error}</div>}
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">
@@ -62,7 +63,12 @@ export default function Login() {
               </div>
               <div className="form-group">
                 <label className="form-label">Password</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Your password" />
+                <div style={{ position: 'relative' }}>
+                  <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Your password" style={{ paddingRight: '2.5rem' }} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: 'var(--muted)' }}>
+                    {showPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
               </div>
               <div style={{ textAlign: 'right', marginBottom: '1.2rem' }}>
                 <a href="#" style={{ fontSize: '0.82rem', color: 'var(--green)', fontWeight: 500 }}>Forgot password?</a>
