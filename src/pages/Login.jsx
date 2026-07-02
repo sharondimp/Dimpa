@@ -9,7 +9,9 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -19,7 +21,6 @@ export default function Login() {
     try {
       const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password)
       const docSnap = await getDoc(doc(db, 'sellers', firebaseUser.uid))
-
       if (docSnap.exists()) {
         const userData = docSnap.data()
         if (userData.role === 'admin') {
