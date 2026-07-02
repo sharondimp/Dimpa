@@ -10,8 +10,11 @@ const ADMIN_EMAIL = 'sharonadelaja186@gmail.com'
 
 export default function Register() {
   const [step, setStep] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const navigate = useNavigate()
 
   const [form, setForm] = useState({
     fullName: '', email: '', password: '', confirmPassword: '',
@@ -50,9 +53,8 @@ export default function Register() {
     setLoading(true)
     try {
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, form.email, form.password)
-
       const isAdmin = form.email === ADMIN_EMAIL
-      const sellerData = {
+      await setDoc(doc(db, 'sellers', firebaseUser.uid), {
         fullName: form.fullName,
         email: form.email,
         storeName: form.storeName,
@@ -64,15 +66,8 @@ export default function Register() {
         status: isAdmin ? 'approved' : 'pending',
         role: isAdmin ? 'admin' : 'seller',
         createdAt: serverTimestamp(),
-      }
-
-      await setDoc(doc(db, 'sellers', firebaseUser.uid), sellerData)
-
-      if (isAdmin) {
-        navigate('/admin')
-      } else {
-        navigate('/dashboard')
-      }
+      })
+      navigate(isAdmin ? '/admin' : '/dashboard')
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') {
         setError('An account with this email already exists')
@@ -236,4 +231,4 @@ export default function Register() {
       </div>
     </div>
   )
-}
+                    }
