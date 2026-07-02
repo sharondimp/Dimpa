@@ -72,8 +72,14 @@ export default function Login() {
                 </div>
               </div>
               <div style={{ textAlign: 'right', marginBottom: '1.2rem' }}>
-                <a href="#" style={{ fontSize: '0.82rem', color: 'var(--green)', fontWeight: 500 }}>Forgot password?</a>
-              </div>
+                <a href="#" onClick={async (e) => {
+  e.preventDefault()
+  if (!email) return setError('Enter your email first')
+  const { sendPasswordResetEmail } = await import('firebase/auth')
+  await sendPasswordResetEmail(auth, email)
+  setError('')
+  alert('Password reset email sent! Check your inbox.')
+}}>Forgot password?</a>
               <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '0.8rem' }} disabled={loading}>
                 {loading ? 'Logging in...' : 'Log In'}
               </button>
