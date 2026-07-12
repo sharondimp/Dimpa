@@ -18,7 +18,7 @@ import Dispute from './pages/Dispute'
 
 function ProtectedRoute({ children, adminOnly }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="page-loader"><div className="spinner"></div></div>
+  if (loading) return null
   if (!user) return <Navigate to="/login" replace />
   if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard" replace />
   return children
@@ -26,7 +26,7 @@ function ProtectedRoute({ children, adminOnly }) {
 
 function HomeRoute() {
   const { user, loading } = useAuth()
-  if (loading) return <div className="page-loader"><div className="spinner"></div></div>
+  if (loading) return null
   if (user?.role === 'admin') return <Navigate to="/admin" replace />
   if (user?.role === 'seller') return <Navigate to="/dashboard" replace />
   return <Landing />
