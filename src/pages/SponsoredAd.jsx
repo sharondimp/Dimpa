@@ -4,6 +4,20 @@ import { db } from '../firebase'
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
 import Navbar from '../components/Navbar'
 
+const loadPaystack = () => new Promise((resolve) => {
+  if (window.PaystackPop) return resolve(window.PaystackPop)
+  const existing = document.querySelector('script[src*="paystack"]')
+  if (existing) {
+    existing.onload = () => resolve(window.PaystackPop)
+    return
+  }
+  const script = document.createElement('script')
+  script.src = 'https://js.paystack.co/v1/inline.js'
+  script.onload = () => resolve(window.PaystackPop)
+  script.onerror = () => resolve(null)
+  document.head.appendChild(script)
+})
+
 export default function SponsoredAd() {
   const { user } = useAuth()
   const isPremium = user?.plan === 'premium'
@@ -22,11 +36,13 @@ export default function SponsoredAd() {
 
   useEffect(() => {
     if (!user?.uid) return
+    // Preload Paystack script
+    loadPaystack()
     const fetchData = async () => {
       try {
         const pQ = query(collection(db, 'products'), where('sellerId', '==', user.uid))
         const pSnap = await getDocs(pQ)
-        setProducts(pSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.status === 'active'))
+        setProducts(pSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.status !== 'inactive'))
         const sQ = query(collection(db, 'sponsoredAds'), where('sellerId', '==', user.uid))
         const sSnap = await getDocs(sQ)
         setSubmissions(sSnap.docs.map(d => ({ id: d.id, ...d.data() })))
@@ -50,19 +66,20 @@ export default function SponsoredAd() {
     }
   }
 
-  const handlePay = () => {
+  const handlePay = async () => {
     setError('')
     if (!form.productId) return setError('Please select a product')
     if (!form.date) return setError('Please select a date')
-    if (slotsInfo.date === form.date && slotsInfo.available <= 0) return setError('No slots available for this date. Please pick another day.')
+    if (slotsInfo.date === form.date && slotsInfo.available <= 0) return setError('No slots available for this date.')
 
-    const PaystackPop = window.PaystackPop
+    setPaying(true)
+    const PaystackPop = await loadPaystack()
     if (!PaystackPop) {
-      setError('Payment system not ready. Please refresh the page and try again.')
+      setError('Payment failed to load. Please refresh and try again.')
+      setPaying(false)
       return
     }
 
-    setPaying(true)
     try {
       const handler = PaystackPop.setup({
         key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
@@ -104,7 +121,7 @@ export default function SponsoredAd() {
       })
       handler.openIframe()
     } catch (err) {
-      setError('Payment failed to open. Please refresh and try again.')
+      setError('Payment failed. Please try again.')
       setPaying(false)
     }
   }
@@ -115,7 +132,7 @@ export default function SponsoredAd() {
     <div style={{ minHeight: '100vh', background: 'var(--bg2)' }}>
       <Navbar variant="dashboard" />
       {toast && <div className="toast success">{toast}</div>}
-      <div style={{ paddingTop: '64px', padding: '5rem 5% 3rem' }}>
+      <div style={{ padding: '5rem 5% 3rem' }}>
         <div style={{ marginBottom: '2rem' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.2rem' }}>⭐ Feature a Product</div>
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Put your product at the top of the marketplace for 24 hours</p>
@@ -124,20 +141,11 @@ export default function SponsoredAd() {
         <div className="card" style={{ marginBottom: '2rem', background: 'var(--green-soft)', border: '1px solid rgba(0,168,120,0.2)' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: '0.75rem' }}>How it works</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
-            {[
-              ['1️⃣', 'Pick a product and date'],
-              ['2️⃣', `Pay ₦${price.toLocaleString()}${isPremium ? ' (50% off!)' : ''}`],
-              ['3️⃣', 'We review and approve'],
-              ['4️⃣', 'Your product is featured for 24hrs'],
-            ].map(([n, t]) => (
-              <div key={n} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', fontSize: '0.85rem', color: 'var(--light)' }}>
-                <span>{n}</span><span>{t}</span>
-              </div>
+            {[['1️⃣','Pick a product and date'],['2️⃣',`Pay ₦${price.toLocaleString()}${isPremium ? ' (50% off!)' : ''}`],['3️⃣','We review and approve'],['4️⃣','Your product is featured for 24hrs']].map(([n,t]) => (
+              <div key={n} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', fontSize: '0.85rem', color: 'var(--light)' }}><span>{n}</span><span>{t}</span></div>
             ))}
           </div>
-          <div style={{ marginTop: '0.75rem', fontSize: '0.78rem', color: 'var(--muted)' }}>
-            ⚠️ Only <strong>3 featured slots</strong> available per day. Book early!
-          </div>
+          <div style={{ marginTop: '0.75rem', fontSize: '0.78rem', color: 'var(--muted)' }}>⚠️ Only <strong>3 featured slots</strong> available per day. Book early!</div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1.5rem' }}>
@@ -152,9 +160,7 @@ export default function SponsoredAd() {
               ) : (
                 <select value={form.productId} onChange={e => setForm(f => ({ ...f, productId: e.target.value }))}>
                   <option value="">-- Choose a product --</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} — ₦{p.price?.toLocaleString()}</option>
-                  ))}
+                  {products.map(p => <option key={p.id} value={p.id}>{p.name} — ₦{p.price?.toLocaleString()}</option>)}
                 </select>
               )}
             </div>
