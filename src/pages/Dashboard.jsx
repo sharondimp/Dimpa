@@ -22,11 +22,9 @@ export default function Dashboard() {
         const ordersData = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         setOrders(ordersData)
 
-        // Fetch products without status filter to avoid index issue
         const productsQ = query(collection(db, 'products'), where('sellerId', '==', user.uid))
         const productsSnap = await getDocs(productsQ)
-        const allProducts = productsSnap.docs.map(d => d.data())
-        const activeProducts = allProducts.filter(p => p.status !== 'inactive')
+        const activeProducts = productsSnap.docs.map(d => d.data()).filter(p => p.status !== 'inactive')
 
         const totalRevenue = ordersData.reduce((sum, o) => sum + (o.amount || 0), 0)
         setStats({ totalSales: ordersData.length, revenue: totalRevenue, products: activeProducts.length })
@@ -62,7 +60,7 @@ export default function Dashboard() {
             <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Here's what's happening with your store</p>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            {!isPremium && <Link to="/dashboard/upgrade" className="btn-primary">⚡ Upgrade to Premium</Link>}
+            {!isPremium && <Link to="/dashboard/upgrade" className="btn-primary">⚡ Upgrade</Link>}
             <Link to={`/store/${user?.storeSlug}`} className="btn-secondary" target="_blank">View Store ↗</Link>
           </div>
         </div>
@@ -104,7 +102,7 @@ export default function Dashboard() {
             <Link to="/dashboard/orders" style={{ fontSize: '0.82rem', color: 'var(--green)', fontWeight: 600 }}>View all →</Link>
           </div>
           {!dataLoaded ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted)', fontSize: '0.875rem' }}>Loading orders...</div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted)', fontSize: '0.875rem' }}>Loading...</div>
           ) : orders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted)' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📭</div>
@@ -115,7 +113,7 @@ export default function Dashboard() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    {['Order ID', 'Buyer', 'Product', 'Amount', 'Status', 'Date'].map(h => (
+                    {['Order ID', 'Buyer', 'Product', 'Amount', 'Status'].map(h => (
                       <th key={h} style={{ textAlign: 'left', padding: '0.6rem 0.8rem', color: 'var(--muted)', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
                     ))}
                   </tr>
@@ -128,9 +126,8 @@ export default function Dashboard() {
                       <td style={{ padding: '0.75rem 0.8rem' }}>{o.productName}</td>
                       <td style={{ padding: '0.75rem 0.8rem', fontWeight: 600, color: 'var(--green)' }}>₦{o.amount?.toLocaleString()}</td>
                       <td style={{ padding: '0.75rem 0.8rem' }}>
-                        <span className={`badge ${o.status === 'delivered' ? 'badge-green' : 'badge-yellow'}`}>{o.status}</span>
+                        <span className={`badge ${o.status === 'delivered' ? 'badge-green' : o.status === 'shipped' ? 'badge-green' : 'badge-yellow'}`}>{o.status}</span>
                       </td>
-                      <td style={{ padding: '0.75rem 0.8rem', color: 'var(--muted)' }}>{o.createdAt?.toDate?.()?.toLocaleDateString('en-NG') || 'N/A'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -140,7 +137,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick actions */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
           <Link to="/dashboard/products" className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', textDecoration: 'none' }}>
             <span style={{ fontSize: '1.5rem' }}>📦</span>
             <div>
@@ -155,10 +152,17 @@ export default function Dashboard() {
               <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Track & manage</div>
             </div>
           </Link>
+          <Link to="/dashboard/settings" className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', textDecoration: 'none' }}>
+            <span style={{ fontSize: '1.5rem' }}>⚙️</span>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Store Settings</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Logo, delivery zones</div>
+            </div>
+          </Link>
           <Link to="/dashboard/sponsored" className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', textDecoration: 'none', border: '1px solid rgba(232,106,26,0.25)', background: 'rgba(232,106,26,0.05)' }}>
             <span style={{ fontSize: '1.5rem' }}>⭐</span>
             <div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#E86A1A' }}>Feature a Product</div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#E86A1A' }}>Feature Product</div>
               <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{isPremium ? '₦500 / 24hrs' : '₦1,000 / 24hrs'}</div>
             </div>
           </Link>
