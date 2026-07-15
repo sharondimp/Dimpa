@@ -7,33 +7,24 @@ const ThemeContext = createContext()
 const AuthContext = createContext()
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem('venda-theme') || 'light')
-
+  const [theme, setTheme] = useState(() => localStorage.getItem('dimpa-theme') || 'light')
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('venda-theme', theme)
+    localStorage.setItem('dimpa-theme', theme)
   }, [theme])
-
   const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light')
-
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>
 }
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Fetch extra user data from Firestore
-        const docRef = doc(db, 'sellers', firebaseUser.uid)
-        const docSnap = await getDoc(docRef)
-        if (docSnap.exists()) {
-          setUser({ uid: firebaseUser.uid, email: firebaseUser.email, ...docSnap.data() })
-        } else {
-          setUser({ uid: firebaseUser.uid, email: firebaseUser.email })
-        }
+        const docSnap = await getDoc(doc(db, 'sellers', firebaseUser.uid))
+        if (docSnap.exists()) setUser({ uid: firebaseUser.uid, email: firebaseUser.email, ...docSnap.data() })
+        else setUser({ uid: firebaseUser.uid, email: firebaseUser.email })
       } else {
         setUser(null)
       }
@@ -41,17 +32,8 @@ export function AuthProvider({ children }) {
     })
     return () => unsub()
   }, [])
-
-  const logout = async () => {
-    await signOut(auth)
-    setUser(null)
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, logout, loading }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  const logout = async () => { await signOut(auth); setUser(null) }
+  return <AuthContext.Provider value={{ user, logout, loading }}>{children}</AuthContext.Provider>
 }
 
 export const useTheme = () => useContext(ThemeContext)
