@@ -53,9 +53,9 @@ export default function Store() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font-body)' }}>
 
       {/* Sticky Nav */}
-      <div style={{ background: theme === 'dark' ? 'rgba(10,10,10,0.95)' : 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)', padding: '0 5%', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
+      <div style={{ background: theme === 'dark' ? 'rgba(8,11,30,0.95)' : 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)', padding: '0 5%', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
         <Link to="/marketplace" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)', textDecoration: 'none' }}>
-          Ven<span style={{ color: 'var(--blue)' }}>da</span>
+          <span style={{ color: 'var(--blue)' }}>D</span>impa
         </Link>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           {store.whatsapp && (
@@ -67,63 +67,52 @@ export default function Store() {
         </div>
       </div>
 
-      {/* Hero Banner */}
-      <div style={{ background: theme === 'dark' ? 'linear-gradient(160deg, #0a2e1e 0%, #0d3d28 50%, #0a2e1e 100%)' : 'linear-gradient(160deg, #064e36 0%, #00A878 50%, #064e36 100%)', padding: '3.5rem 5% 2.5rem', position: 'relative', overflow: 'hidden' }}>
-        {/* Decorative circles */}
-        <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
-        <div style={{ position: 'absolute', bottom: '-60px', left: '-60px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
-        <div style={{ position: 'absolute', top: '20px', left: '30%', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
+      {/* Hero Banner — navy/blue instead of green */}
+      <div style={{ background: theme === 'dark' ? 'linear-gradient(160deg, #080B1E 0%, #0F1A5C 50%, #080B1E 100%)' : 'linear-gradient(160deg, #0A0E3A 0%, #1A2FD4 50%, #0A0E3A 100%)', padding: '3.5rem 5% 2.5rem', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(0,200,150,0.08)' }} />
+        <div style={{ position: 'absolute', bottom: '-60px', left: '-60px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(26,47,212,0.15)' }} />
 
         <div style={{ position: 'relative', textAlign: 'center' }}>
           {/* Logo */}
           <div style={{ marginBottom: '1.2rem' }}>
             {store.logoUrl ? (
-              <img src={store.logoUrl} alt={store.storeName} style={{ width: '96px', height: '96px', borderRadius: '24px', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.3)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', display: 'inline-block' }} />
+              <img src={store.logoUrl} alt={store.storeName} style={{ width: '96px', height: '96px', borderRadius: '24px', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', display: 'inline-block' }} />
             ) : (
-              <div style={{ width: '96px', height: '96px', borderRadius: '24px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff', fontSize: '2.4rem', border: '3px solid rgba(255,255,255,0.25)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+              <div style={{ width: '96px', height: '96px', borderRadius: '24px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#fff', fontSize: '2.4rem', border: '3px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
                 {store.storeName?.[0]}
               </div>
             )}
           </div>
 
-          {/* Store name + badges */}
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 5vw, 2.2rem)', fontWeight: 800, color: '#fff', marginBottom: '0.6rem', letterSpacing: '-0.02em' }}>
             {store.storeName}
           </h1>
 
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '0.8rem' }}>
-            <span style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)', color: '#fff', fontSize: '0.7rem', fontWeight: 700, padding: '0.25rem 0.7rem', borderRadius: '50px', border: '1px solid rgba(255,255,255,0.25)', letterSpacing: '0.05em' }}>✓ VERIFIED</span>
-            {store.plan === 'premium' && <span style={{ background: 'rgba(255,215,0,0.2)', color: '#FFD700', fontSize: '0.7rem', fontWeight: 700, padding: '0.25rem 0.7rem', borderRadius: '50px', border: '1px solid rgba(255,215,0,0.35)', letterSpacing: '0.05em' }}>⭐ PREMIUM</span>}
-            <span style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)', fontSize: '0.7rem', padding: '0.25rem 0.7rem', borderRadius: '50px' }}>
+            <span style={{ background: 'rgba(0,200,150,0.15)', color: '#00C896', fontSize: '0.7rem', fontWeight: 700, padding: '0.25rem 0.7rem', borderRadius: '50px', border: '1px solid rgba(0,200,150,0.3)', letterSpacing: '0.05em' }}>✓ VERIFIED</span>
+            {store.plan === 'premium' && <span style={{ background: 'rgba(255,215,0,0.15)', color: '#FFD700', fontSize: '0.7rem', fontWeight: 700, padding: '0.25rem 0.7rem', borderRadius: '50px', border: '1px solid rgba(255,215,0,0.3)', letterSpacing: '0.05em' }}>⭐ PRO</span>}
+            <span style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', padding: '0.25rem 0.7rem', borderRadius: '50px' }}>
               {store.productType === 'physical' ? '📦 Physical' : store.productType === 'digital' ? '💻 Digital' : '🛍️ Physical & Digital'}
             </span>
           </div>
 
           {store.storeDesc && (
-            <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', maxWidth: '500px', margin: '0 auto 1.2rem', lineHeight: 1.65 }}>{store.storeDesc}</p>
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem', maxWidth: '500px', margin: '0 auto 1.2rem', lineHeight: 1.65 }}>{store.storeDesc}</p>
           )}
 
           {/* Social links */}
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             {store.instagram && (
-              <a href={`https://instagram.com/${store.instagram}`} target="_blank" rel="noreferrer" style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: '0.78rem', padding: '0.35rem 0.9rem', borderRadius: '50px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                📸 Instagram
-              </a>
+              <a href={`https://instagram.com/${store.instagram}`} target="_blank" rel="noreferrer" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.78rem', padding: '0.35rem 0.9rem', borderRadius: '50px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.15)' }}>📸 Instagram</a>
             )}
             {store.twitter && (
-              <a href={`https://x.com/${store.twitter}`} target="_blank" rel="noreferrer" style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: '0.78rem', padding: '0.35rem 0.9rem', borderRadius: '50px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                𝕏 Twitter
-              </a>
+              <a href={`https://x.com/${store.twitter}`} target="_blank" rel="noreferrer" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.78rem', padding: '0.35rem 0.9rem', borderRadius: '50px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.15)' }}>𝕏 Twitter</a>
             )}
             {store.whatsapp && (
-              <a href={`https://wa.me/${store.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: '0.78rem', padding: '0.35rem 0.9rem', borderRadius: '50px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                💬 WhatsApp
-              </a>
+              <a href={`https://wa.me/${store.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.78rem', padding: '0.35rem 0.9rem', borderRadius: '50px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.15)' }}>💬 WhatsApp</a>
             )}
             {store.website && (
-              <a href={store.website} target="_blank" rel="noreferrer" style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: '0.78rem', padding: '0.35rem 0.9rem', borderRadius: '50px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                🌐 Website
-              </a>
+              <a href={store.website} target="_blank" rel="noreferrer" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.78rem', padding: '0.35rem 0.9rem', borderRadius: '50px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.15)' }}>🌐 Website</a>
             )}
           </div>
         </div>
@@ -131,15 +120,12 @@ export default function Store() {
 
       {/* Stats bar */}
       <div style={{ background: 'var(--bg2)', borderBottom: '1px solid var(--border)', padding: '0.65rem 5%', display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-          <strong style={{ color: 'var(--text)' }}>{products.length}</strong> product{products.length !== 1 ? 's' : ''}
-        </div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}><strong style={{ color: 'var(--text)' }}>{products.length}</strong> product{products.length !== 1 ? 's' : ''}</div>
         <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>🔒 Secure checkout via Paystack</div>
       </div>
 
-      {/* Products section */}
+      {/* Products */}
       <div style={{ padding: '2rem 5%' }}>
-        {/* Search + filter */}
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, position: 'relative', minWidth: '180px' }}>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products..." style={{ paddingLeft: '2.2rem', width: '100%' }} />
@@ -163,10 +149,9 @@ export default function Store() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(175px, 1fr))', gap: '1rem' }}>
             {filtered.map(p => (
-              <div key={p.id} style={{ background: 'var(--card)', borderRadius: '14px', border: '1px solid var(--border)', overflow: 'hidden', transition: 'all 0.22s', cursor: 'pointer' }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.12)'; e.currentTarget.style.borderColor = 'var(--blue)' }}
+              <div key={p.id} style={{ background: 'var(--card)', borderRadius: '14px', border: '1px solid var(--border)', overflow: 'hidden', transition: 'all 0.22s' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(26,47,212,0.12)'; e.currentTarget.style.borderColor = 'var(--blue)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--border)' }}>
-                {/* Image */}
                 {p.imageUrl ? (
                   <img src={p.imageUrl} alt={p.name} style={{ width: '100%', height: '170px', objectFit: 'cover', display: 'block' }} />
                 ) : (
@@ -175,7 +160,7 @@ export default function Store() {
                   </div>
                 )}
                 <div style={{ padding: '0.9rem' }}>
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.18rem 0.5rem', borderRadius: '4px', background: 'rgba(26,47,212,0.08)', color: 'var(--blue)', border: '1px solid rgba(0,168,120,0.2)', marginBottom: '0.5rem', display: 'inline-block' }}>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.18rem 0.5rem', borderRadius: '4px', background: 'rgba(26,47,212,0.08)', color: 'var(--blue)', border: '1px solid rgba(26,47,212,0.15)', marginBottom: '0.5rem', display: 'inline-block' }}>
                     {p.type === 'digital' ? '💻 Digital' : '📦 Physical'}
                   </span>
                   <div style={{ fontWeight: 700, marginBottom: '0.25rem', fontFamily: 'var(--font-display)', fontSize: '0.9rem', lineHeight: 1.3 }}>{p.name}</div>
@@ -192,7 +177,7 @@ export default function Store() {
 
         <div style={{ textAlign: 'center', marginTop: '3rem', padding: '1.5rem 0', borderTop: '1px solid var(--border)' }}>
           <p style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
-            Powered by <Link to="/" style={{ color: 'var(--blue)', fontWeight: 600 }}>Dimpa</Link> · Real sellers. Real products. · <Link to="/dispute" style={{ color: 'var(--muted)' }}>Report an issue</Link>
+            Powered by <Link to="/" style={{ color: 'var(--blue)', fontWeight: 600 }}>Dimpa</Link> · Buy. Sell. Grow. · <Link to="/dispute" style={{ color: 'var(--muted)' }}>Report an issue</Link>
           </p>
         </div>
       </div>
