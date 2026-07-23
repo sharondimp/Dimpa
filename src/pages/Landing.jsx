@@ -25,7 +25,7 @@ export default function Landing() {
             <span style={{ background: 'linear-gradient(120deg, #1A2FD4 0%, #00C896 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Grow.</span>
           </h1>
 
-          <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.15rem)', color: 'rgba(255,255,255,0.6)', maxWidth: '480px', lineHeight: 1.75, marginBottom: '2.5rem' }}>
+          <p style={{ fontSize: 'clamp(1.05rem, 3vw, 1.15rem)', color: 'rgba(255,255,255,0.6)', maxWidth: '480px', lineHeight: 1.75, marginBottom: '2.5rem' }}>
             Nigeria's trusted marketplace for physical and digital products. Every seller is verified. Get paid in naira. No stress.
           </p>
 
@@ -42,7 +42,7 @@ export default function Landing() {
             {[['100%', 'Verified sellers'], ['₦0', 'To get started'], ['5min', 'Store setup']].map(([v, l]) => (
               <div key={l}>
                 <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '1.4rem', fontWeight: 800, color: '#00C896' }}>{v}</div>
-                <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.1rem' }}>{l}</div>
+                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.1rem' }}>{l}</div>
               </div>
             ))}
           </div>
@@ -76,14 +76,14 @@ export default function Landing() {
               From sign up to first sale<br />in minutes.
             </h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}>
+          <div className="how-it-works-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}>
             {[
               { n: '01', t: 'Register your store', d: 'Sign up, verify with your NIN and set up your store in minutes.' },
               { n: '02', t: 'List your products', d: 'Add products with photos, prices, and descriptions.' },
               { n: '03', t: 'Share your link', d: 'Send your unique store link on WhatsApp, Instagram or anywhere.' },
               { n: '04', t: 'Get paid', d: 'Buyers pay via Paystack. Money released after successful delivery.' },
             ].map((s, i) => (
-              <div key={s.n} style={{ padding: '2rem 1.5rem', background: '#080B1E', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+              <div key={s.n} style={{ padding: '2rem 1.5rem', background: '#080B1E', borderRight: (i % 2 === 0) ? '1px solid rgba(255,255,255,0.06)' : 'none', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
                 <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '1.8rem', fontWeight: 800, color: 'rgba(26,47,212,0.3)', marginBottom: '1rem' }}>{s.n}</div>
                 <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.5rem', color: '#fff' }}>{s.t}</div>
                 <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.65 }}>{s.d}</div>
@@ -170,6 +170,7 @@ export default function Landing() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         @media (min-width: 900px) { .hero-card { display: block !important; } }
+        @media (min-width: 700px) { .how-it-works-grid { grid-template-columns: repeat(4, 1fr) !important; } }
         @media (max-width: 640px) {
           section { padding-left: 5% !important; padding-right: 5% !important; }
           div[style*="right: 5%"][style*="position: absolute"] { display: none !important; }
@@ -177,4 +178,4 @@ export default function Landing() {
       `}</style>
     </div>
   )
-}
+          }
